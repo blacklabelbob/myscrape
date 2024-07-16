@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+ffrom flask import Flask, request, render_template, jsonify
 import requests
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
@@ -109,7 +109,7 @@ class WebScraper:
         else:
             return self.scrape_non_ecommerce(url)
 
-    def run(self, domain):
+    def run(self, domain, include_blogs, only_blogs):
         sitemap_url = self.get_sitemap_url(domain)
         if not sitemap_url:
             return {"error": "Sitemap not found. Exiting."}
@@ -123,8 +123,13 @@ class WebScraper:
         
         blog_urls = [url for url in urls if "/blog/" in url]
         non_blog_urls = [url for url in urls if "/blog/" not in url]
-        
-        urls_to_scrape = non_blog_urls + blog_urls
+
+        if only_blogs:
+            urls_to_scrape = blog_urls
+        elif include_blogs:
+            urls_to_scrape = non_blog_urls + blog_urls
+        else:
+            urls_to_scrape = non_blog_urls
         
         scraped_data = []
         
@@ -144,9 +149,11 @@ class WebScraper:
 def index():
     if request.method == 'POST':
         url = request.form['url']
+        include_blogs = request.form.get('include_blogs') == 'on'
+        only_blogs = request.form.get('only_blogs') == 'on'
         domain = urlparse(url).netloc
         scraper = WebScraper()
-        result = scraper.run(domain)
+        result = scraper.run(domain, include_blogs, only_blogs)
         return jsonify(result)
     return render_template('index.html')
 
